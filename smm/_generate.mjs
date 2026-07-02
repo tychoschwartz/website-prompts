@@ -34,20 +34,55 @@ function initials(name){
 function logoDataUri(name){
   const h=hashInt(name);
   const hue=h%360, hue2=(hue+38)%360;
-  const svg=`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'>`+
-    `<defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'>`+
-    `<stop offset='0' stop-color='hsl(${hue},68%,54%)'/>`+
-    `<stop offset='1' stop-color='hsl(${hue2},66%,30%)'/>`+
+  // double-quoted attrs so encodeURIComponent yields a quote-free URI
+  // (safe inside both src="..." and onerror="this.src='...'")
+  const svg=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">`+
+    `<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">`+
+    `<stop offset="0" stop-color="hsl(${hue},68%,54%)"/>`+
+    `<stop offset="1" stop-color="hsl(${hue2},66%,30%)"/>`+
     `</linearGradient></defs>`+
-    `<rect width='100' height='100' fill='url(#g)'/>`+
-    `<circle cx='30' cy='26' r='34' fill='rgba(255,255,255,.14)'/>`+
-    `<text x='50' y='54' text-anchor='middle' dominant-baseline='central' `+
-    `font-family='Georgia,"Times New Roman",serif' font-weight='700' font-size='40' `+
-    `letter-spacing='1' fill='rgba(255,255,255,.96)'>${initials(name)}</text></svg>`;
+    `<rect width="100" height="100" fill="url(#g)"/>`+
+    `<circle cx="30" cy="26" r="34" fill="rgba(255,255,255,.14)"/>`+
+    `<text x="50" y="54" text-anchor="middle" dominant-baseline="central" `+
+    `font-family="Georgia, serif" font-weight="700" font-size="40" `+
+    `letter-spacing="1" fill="rgba(255,255,255,.96)">${initials(name)}</text></svg>`;
   return "data:image/svg+xml,"+encodeURIComponent(svg);
 }
+// map handle -> actual file on disk (case differs for some)
+const LOGO_FILES = {
+  Forthinkingminds: "Forthinkingminds.png", forthinkingminds: "Forthinkingminds.png",
+  MindsetRaptors: "MindsetRaptors.jpg", mindsetraptors: "MindsetRaptors.jpg",
+};
+const MIME = { jpg:"image/jpeg", jpeg:"image/jpeg", png:"image/png", webp:"image/webp" };
+function realLogoDataUri(name){
+  const dir = path.join(DIR, "logos");
+  // try known filename, then common extensions
+  const candidates = [];
+  if (LOGO_FILES[name]) candidates.push(LOGO_FILES[name]);
+  for (const ext of ["jpg","png","webp","jpeg"]) candidates.push(name + "." + ext);
+  for (const f of candidates) {
+    const p = path.join(dir, f);
+    if (fs.existsSync(p)) {
+      const ext = f.split(".").pop().toLowerCase();
+      const b64 = fs.readFileSync(p).toString("base64");
+      return "data:" + (MIME[ext]||"image/jpeg") + ";base64," + b64;
+    }
+  }
+  return null;
+}
 function inlineLogos(html){
-  return html.replace(/logos\/([a-zA-Z0-9_-]+)\.[a-z0-9]+/g, (_,name)=>logoDataUri(name));
+  // Prefer a real logo baked in (if decoded to smm/logos/); otherwise keep the
+  // logos/<file> reference so the user's own logo folder is used when present,
+  // with a distinct monogram as an automatic onerror fallback for standalone use.
+  return html.replace(
+    /<img\b([^>]*?)src="logos\/([a-zA-Z0-9_-]+)\.([a-z0-9]+)"([^>]*?)>/g,
+    (m, pre, name, ext, post) => {
+      const real = realLogoDataUri(name);
+      if (real) return `<img${pre}src="${real}"${post}>`;
+      const mono = logoDataUri(name);
+      return `<img${pre}src="logos/${name}.${ext}" onerror="this.onerror=null;this.src='${mono}'"${post}>`;
+    }
+  );
 }
 
 const NOISE_URI =
