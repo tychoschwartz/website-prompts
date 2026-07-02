@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Wanderful — Travel Brand</title>
+
+<!-- Tailwind (Play CDN) -->
+<script src="https://cdn.tailwindcss.com"></script>
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Barlow:wght@300;400;500;600&family=Inter:wght@300;400;500;600;700&display=swap');
+
+  @font-face {
+    font-family: 'Dirtyline';
+    src: url('https://fonts.cdnfonts.com/s/15011/Dirtyline36DaysofType.woff') format('woff');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+  }
+
+  body { font-family: 'Barlow', sans-serif; background: #000; margin: 0; }
+
+  .liquid-glass {
+    background: rgba(255, 255, 255, 0.01);
+    background-blend-mode: luminosity;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    border: none;
+    box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.1);
+    position: relative;
+    overflow: hidden;
+  }
+  .liquid-glass::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1.4px;
+    background: linear-gradient(180deg,
+      rgba(255, 255, 255, 0.45) 0%,
+      rgba(255, 255, 255, 0.15) 20%,
+      rgba(255, 255, 255, 0) 40%,
+      rgba(255, 255, 255, 0) 60%,
+      rgba(255, 255, 255, 0.15) 80%,
+      rgba(255, 255, 255, 0.45) 100%);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<!-- Babel standalone: transpiles the JSX module below in-browser -->
+<script src="https://unpkg.com/@babel/standalone@7.25.6/babel.min.js"></script>
+
+<script type="text/babel" data-type="module" data-presets="react">
+import React, { useEffect, useRef, useState } from "https://esm.sh/react@18.3.1";
+import { createRoot } from "https://esm.sh/react-dom@18.3.1/client";
+import gsap from "https://esm.sh/gsap@3.12.5";
+import { Lock } from "https://esm.sh/lucide-react@0.427.0?deps=react@18.3.1";
+
+const VIDEO_SRC =
+  "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260510_060007_60275ce7-030c-4668-a160-8f364ec537d3.mp4";
+
+function VideoBackground() {
+  const wrapperRef = useRef(null);
+  const videoRef = useRef(null);
+
+  useEffect(() => {
+    const el = wrapperRef.current;
+    if (!el) return;
+
+    let targetX = 0, targetY = 0, currentX = 0, currentY = 0;
+    let rafId;
+
+    const onMouseMove = (e) => {
+      const cx = window.innerWidth / 2;
+      const cy = window.innerHeight / 2;
+      targetX = ((e.clientX - cx) / cx) * 20;
+      targetY = ((e.clientY - cy) / cy) * 20;
+    };
+
+    const tick = () => {
+      currentX += (targetX - currentX) * 0.06;
+      currentY += (targetY - currentY) * 0.06;
+      gsap.set(el, { x: currentX, y: currentY });
+      rafId = requestAnimationFrame(tick);
+    };
+
+    window.addEventListener("mousemove", onMouseMove);
+    rafId = requestAnimationFrame(tick);
+
+    return () => {
+      window.removeEventListener("mousemove", onMouseMove);
+      cancelAnimationFrame(rafId);
+    };
+  }, []);
+
+  return (
+    <div
+      ref={wrapperRef}
+      className="fixed inset-0 z-0 scale-[1.08] origin-center"
+    >
+      <video
+        ref={videoRef}
+        src={VIDEO_SRC}
+        autoPlay
+        muted
+        loop
+        playsInline
+        className="w-full h-full object-cover"
+        onLoadedMetadata={(e) => { e.currentTarget.playbackRate = 1.25; }}
+      />
+    </div>
+  );
+}
+
+const NAV_LINKS = ["JOURNEY", "BENEFITS", "JOURNAL", "GUIDEBOOK"];
+
+function Header() {
+  return (
+    <header className="fixed top-0 left-0 w-full z-50 px-10 py-8 flex justify-between items-center">
+      <div className="text-[17px] font-semibold tracking-tight text-white">
+        Wanderful<sup>TM</sup>
+      </div>
+
+      <nav className="liquid-glass rounded-full px-2 py-2 flex items-center gap-1">
+        {NAV_LINKS.map((link) => (
+          <a
+            key={link}
+            href="#"
+            className="text-[11px] font-medium tracking-[0.12em] text-white/90 hover:text-white px-4 py-1.5 rounded-full transition-colors duration-200"
+          >
+            {link}
+          </a>
+        ))}
+      </nav>
+
+      <a
+        href="#"
+        className="liquid-glass rounded-full px-5 py-2.5 text-[11px] font-medium tracking-[0.12em] text-white/90 hover:text-white transition-colors duration-200"
+      >
+        GET ROAMING
+      </a>
+    </header>
+  );
+}
+
+function Headline() {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setMounted(true), 50);
+    return () => clearTimeout(t);
+  }, []);
+  return (
+    <div
+      className="fixed left-1/2 -translate-x-1/2 z-20 text-center transition-all duration-1000"
+      style={{
+        top: "120px",
+        opacity: mounted ? 1 : 0,
+        transform: `translateX(-50%) translateY(${mounted ? "0" : "24px"})`,
+      }}
+    >
+      <h1
+        style={{
+          fontFamily: "'Inter', sans-serif",
+          fontWeight: 400,
+          fontSize: "clamp(40px, 5.4vw, 72px)",
+          lineHeight: 1.1,
+          letterSpacing: "-0.02em",
+        }}
+      >
+        <span className="text-white block">Venture without edges.</span>
+        <span className="block" style={{ color: "rgba(255,255,255,0.55)" }}>
+          Uncover with keen instinct.
+        </span>
+      </h1>
+    </div>
+  );
+}
+
+function BottomBlock() {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setMounted(true), 50);
+    return () => clearTimeout(t);
+  }, []);
+
+  return (
+    <div
+      className="fixed left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-6 transition-all duration-1000 delay-300"
+      style={{
+        bottom: "56px",
+        opacity: mounted ? 1 : 0,
+        transform: `translateX(-50%) translateY(${mounted ? "0" : "24px"})`,
+      }}
+    >
+      <p className="max-w-[620px] text-[15px] leading-relaxed text-center px-4">
+        <span className="text-white">
+          Our smart itineraries shape around you — your rhythm, your vibe, your hunger for adventure.
+        </span>
+        <span className="text-white/55">
+          {" "}Each getaway is tailored, seamless, and wholly yours.
+        </span>
+      </p>
+
+      <button className="bg-white text-black text-[15px] font-medium rounded-full px-8 py-3.5 transition-all hover:scale-[1.03] hover:shadow-[0_0_32px_4px_rgba(255,255,255,0.2)] active:scale-[0.97]">
+        Plan my escape today
+      </button>
+
+      <div className="flex items-center gap-2">
+        <Lock size={13} strokeWidth={1.5} className="text-white/70" />
+        <span className="text-[11px] font-medium tracking-[0.14em] text-white/70">
+          SECURE BY DESIGN. ZERO DATA LEAKS.
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function App() {
+  return (
+    <div
+      className="min-h-screen bg-black text-white overflow-x-hidden"
+      style={{ fontFamily: "'Inter', sans-serif" }}
+    >
+      <VideoBackground />
+      <Header />
+      <Headline />
+      <BottomBlock />
+    </div>
+  );
+}
+
+createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>

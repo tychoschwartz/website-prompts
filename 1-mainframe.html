@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Mainframe — Creative Agency</title>
+
+<!-- Fonts (from the prompt) -->
+<link rel="stylesheet" href="https://db.onlinewebfonts.com/c/5ac3fe7c6abd2f62067f266d89671492?family=HelveticaNowDisplay-Medium" />
+<link rel="stylesheet" href="https://db.onlinewebfonts.com/c/1aa3377e489837a26d019bba501e779d?family=HelveticaNowDisplayW01-Rg" />
+
+<!-- Tailwind (Play CDN) -->
+<script src="https://cdn.tailwindcss.com"></script>
+
+<style>
+  :root {
+    --font-heading: 'HelveticaNowDisplay-Medium', 'Helvetica Neue', Arial, sans-serif;
+    --font-body: 'HelveticaNowDisplayW01-Rg', 'Helvetica Neue', Arial, sans-serif;
+  }
+  html, body, #root { height: 100%; }
+  body { font-family: var(--font-body); margin: 0; }
+  @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+  .blink-cursor { animation: blink 1s step-end infinite; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<!-- Babel standalone: transpiles the JSX module below in-browser -->
+<script src="https://unpkg.com/@babel/standalone@7.25.6/babel.min.js"></script>
+
+<script type="text/babel" data-type="module" data-presets="react">
+import React, { useState, useEffect, useRef, useCallback } from "https://esm.sh/react@18.3.1";
+import { createRoot } from "https://esm.sh/react-dom@18.3.1/client";
+
+const VIDEO_SRC =
+  "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260530_042513_df96a13b-6155-4f6e-8b93-c9dee66fba08.mp4";
+const SENSITIVITY = 0.8;
+
+/* ---------- Mouse-scrub background video ---------- */
+function ScrubVideo() {
+  const videoRef = useRef(null);
+  const prevX = useRef(null);
+  const targetTime = useRef(0);
+  const seeking = useRef(false);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    const seekTo = (t) => {
+      seeking.current = true;
+      video.currentTime = t;
+    };
+
+    const onSeeked = () => {
+      seeking.current = false;
+      // Queue next seek if the target has moved since we started.
+      if (Math.abs(video.currentTime - targetTime.current) > 0.001) {
+        seekTo(targetTime.current);
+      }
+    };
+    video.addEventListener("seeked", onSeeked);
+
+    const onMouseMove = (e) => {
+      if (!video.duration || isNaN(video.duration)) return;
+      if (prevX.current === null) {
+        prevX.current = e.clientX;
+        return;
+      }
+      const delta = e.clientX - prevX.current;
+      prevX.current = e.clientX;
+      const offset = (delta / window.innerWidth) * SENSITIVITY * video.duration;
+      let t = targetTime.current + offset;
+      t = Math.max(0, Math.min(video.duration, t));
+      targetTime.current = t;
+      if (!seeking.current) seekTo(t);
+    };
+    window.addEventListener("mousemove", onMouseMove);
+
+    return () => {
+      window.removeEventListener("mousemove", onMouseMove);
+      video.removeEventListener("seeked", onSeeked);
+    };
+  }, []);
+
+  return (
+    <video
+      ref={videoRef}
+      src={VIDEO_SRC}
+      muted
+      playsInline
+      preload="auto"
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 0,
+        width: "100%",
+        height: "100%",
+        objectFit: "cover",
+        objectPosition: "70% center",
+      }}
+    />
+  );
+}
+
+/* ---------- Typewriter hook ---------- */
+function useTypewriter(text, speed = 38, startDelay = 600) {
+  const [displayed, setDisplayed] = useState("");
+  const [done, setDone] = useState(false);
+
+  useEffect(() => {
+    let i = 0;
+    let interval;
+    const timeout = setTimeout(() => {
+      interval = setInterval(() => {
+        i += 1;
+        setDisplayed(text.slice(0, i));
+        if (i >= text.length) {
+          clearInterval(interval);
+          setDone(true);
+        }
+      }, speed);
+    }, startDelay);
+    return () => {
+      clearTimeout(timeout);
+      clearInterval(interval);
+    };
+  }, [text, speed, startDelay]);
+
+  return { displayed, done };
+}
+
+/* ---------- Navbar ---------- */
+const NAV_LINKS = ["Labs", "Studio", "Openings", "Shop"];
+
+function Navbar() {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <>
+      <header className="fixed top-0 left-0 w-full z-10 px-5 sm:px-8 py-4 sm:py-5 flex justify-between items-center">
+        {/* Logo */}
+        <div className="flex flex-row items-center gap-3">
+          <span
+            className="text-[21px] sm:text-[26px] tracking-tight text-black"
+            style={{ fontFamily: "var(--font-heading)" }}
+          >
+            Mainframe&reg;
+          </span>
+          <span
+            className="text-[25px] sm:text-[30px] text-black select-none"
+            style={{ letterSpacing: "-0.02em" }}
+          >
+            &#10035;&#65038;
+          </span>
+        </div>
+
+        {/* Desktop nav links */}
+        <nav className="hidden md:flex flex-row text-[23px] text-black">
+          {NAV_LINKS.map((link, idx) => (
+            <React.Fragment key={link}>
+              <a href="#" className="hover:opacity-60 transition-opacity">
+                {link}
+              </a>
+              {idx < NAV_LINKS.length - 1 && <span>,&nbsp;</span>}
+            </React.Fragment>
+          ))}
+        </nav>
+
+        {/* Desktop CTA */}
+        <a
+          href="#"
+          className="hidden md:inline text-[23px] text-black underline underline-offset-2 hover:opacity-60 transition-opacity"
+        >
+          Get in touch
+        </a>
+
+        {/* Mobile hamburger */}
+        <button
+          className="flex md:hidden flex-col justify-center"
+          style={{ gap: "5px" }}
+          onClick={() => setOpen((v) => !v)}
+          aria-label="Menu"
+        >
+          <span
+            className="w-6 h-[2px] bg-black transition-all duration-300"
+            style={{ transform: open ? "translateY(7px) rotate(45deg)" : "none" }}
+          />
+          <span
+            className="w-6 h-[2px] bg-black transition-all duration-300"
+            style={{ opacity: open ? 0 : 1 }}
+          />
+          <span
+            className="w-6 h-[2px] bg-black transition-all duration-300"
+            style={{ transform: open ? "translateY(-7px) rotate(-45deg)" : "none" }}
+          />
+        </button>
+      </header>
+
+      {/* Mobile overlay */}
+      <div
+        className="fixed inset-0 z-[9] bg-white/95 backdrop-blur-sm flex flex-col justify-center items-start px-8 gap-8 transition-opacity duration-300 md:hidden"
+        style={{ opacity: open ? 1 : 0, pointerEvents: open ? "auto" : "none" }}
+      >
+        {NAV_LINKS.map((link) => (
+          <a key={link} href="#" className="text-[32px] font-medium text-black" onClick={() => setOpen(false)}>
+            {link}
+          </a>
+        ))}
+        <a href="#" className="text-[32px] font-medium text-black underline underline-offset-2" onClick={() => setOpen(false)}>
+          Get in touch
+        </a>
+      </div>
+    </>
+  );
+}
+
+/* ---------- Copy icon ---------- */
+function CopyIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="3.5" y="3.5" width="7" height="7" rx="1" stroke="currentColor" strokeWidth="1" />
+      <rect x="1.5" y="1.5" width="7" height="7" rx="1" stroke="currentColor" strokeWidth="1" />
+    </svg>
+  );
+}
+
+/* ---------- Hero ---------- */
+const WHITE_PILLS = ["Pitch us an idea", "Come work here", "Send a brief hello", "See how we operate"];
+
+function Hero() {
+  const { displayed, done } = useTypewriter(
+    "Glad you stopped in. Good taste tends to find us. Now, what are we building?"
+  );
+  const [pillsVisible, setPillsVisible] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    const t = setTimeout(() => setPillsVisible(true), 400);
+    return () => clearTimeout(t);
+  }, []);
+
+  const copyEmail = useCallback(() => {
+    navigator.clipboard?.writeText("hello@mainframe.co");
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  }, []);
+
+  const pillBase =
+    "inline-flex items-center justify-center rounded-full text-[13px] sm:text-[15px] px-4 sm:px-5 py-[0.3em] mx-[0.2em] mb-[0.4em] whitespace-nowrap";
+
+  return (
+    <section className="relative z-[1] h-screen flex flex-col justify-end pb-12 md:justify-center md:pb-0 px-5 sm:px-8 md:px-10 overflow-hidden">
+      <div className="max-w-xl relative z-10">
+        {/* Blurred intro label */}
+        <div
+          className="pointer-events-none select-none mb-5 sm:mb-6"
+          style={{
+            fontSize: "clamp(18px, 4vw, 26px)",
+            lineHeight: 1.3,
+            fontWeight: 400,
+            color: "#000",
+            filter: "blur(4px)",
+          }}
+        >
+          Hey there, meet A.R.I.A,
+          <br />
+          Mainframe's Adaptive Response Interface Agent
+        </div>
+
+        {/* Typewriter */}
+        <p
+          className="text-black mb-5 sm:mb-6"
+          style={{
+            fontSize: "clamp(18px, 4vw, 26px)",
+            lineHeight: 1.35,
+            fontWeight: 400,
+            minHeight: "54px",
+          }}
+        >
+          {displayed}
+          {!done && (
+            <span className="blink-cursor inline-block w-[2px] h-[1.1em] bg-black align-middle ml-[2px]" />
+          )}
+        </p>
+
+        {/* Action pills */}
+        <div
+          className="flex flex-wrap gap-y-1"
+          style={{
+            opacity: pillsVisible ? 1 : 0,
+            transform: pillsVisible ? "translateY(0)" : "translateY(8px)",
+            transition: "opacity 0.4s ease, transform 0.4s ease",
+          }}
+        >
+          {WHITE_PILLS.map((label) => (
+            <button
+              key={label}
+              className={`${pillBase} bg-white text-black border border-black/10 hover:bg-black hover:text-white transition-colors duration-200`}
+            >
+              {label}
+            </button>
+          ))}
+
+          <button
+            onClick={copyEmail}
+            className={`${pillBase} text-white bg-transparent border border-white hover:bg-white hover:text-black transition-colors duration-200 gap-2 sm:gap-3`}
+          >
+            <span>
+              Reach us: <span className="underline underline-offset-1">hello@mainframe.co</span>
+            </span>
+            <CopyIcon />
+            {copied && <span className="text-[11px] opacity-70">copied</span>}
+          </button>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function App() {
+  return (
+    <>
+      <ScrubVideo />
+      <Navbar />
+      <Hero />
+    </>
+  );
+}
+
+createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>

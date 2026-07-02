@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Prisma — Creative Studio</title>
+
+<!-- Google Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+  href="https://fonts.googleapis.com/css2?family=Almarai:wght@300;400;700;800&family=Instrument+Serif:ital@1&display=swap"
+  rel="stylesheet"
+/>
+
+<!-- Tailwind (Play CDN) -->
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: { primary: "#DEDBC8" },
+        fontFamily: { serif: ['"Instrument Serif"', "serif"] },
+      },
+    },
+  };
+</script>
+
+<style>
+  * {
+    font-family: "Almarai", -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto",
+      "Oxygen", "Ubuntu", "Cantarell", sans-serif;
+  }
+  body { margin: 0; background: #000; }
+  .font-serif { font-family: "Instrument Serif", serif !important; }
+
+  /* SVG noise texture utilities */
+  .noise-overlay {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  .bg-noise {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n2'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n2)'/%3E%3C/svg%3E");
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<!-- Babel standalone: transpiles the JSX module below in-browser -->
+<script src="https://unpkg.com/@babel/standalone@7.25.6/babel.min.js"></script>
+
+<script type="text/babel" data-type="module" data-presets="react">
+import React, { useRef } from "https://esm.sh/react@18.3.1";
+import { createRoot } from "https://esm.sh/react-dom@18.3.1/client";
+import { motion, useInView, useScroll, useTransform } from "https://esm.sh/framer-motion@11.3.0?deps=react@18.3.1";
+import { ArrowRight, Check } from "https://esm.sh/lucide-react@0.427.0?deps=react@18.3.1";
+
+const CREAM = "#E1E0CC";
+const EASE = [0.16, 1, 0.3, 1];
+
+/* ---------- WordsPullUp ---------- */
+function WordsPullUp({ text, className = "", showAsterisk = false }) {
+  const ref = useRef(null);
+  const inView = useInView(ref, { once: true });
+  const words = text.split(" ");
+
+  return (
+    <span ref={ref} className={className}>
+      {words.map((word, i) => {
+        const isLast = i === words.length - 1;
+        return (
+          <motion.span
+            key={i}
+            className="inline-block relative"
+            initial={{ y: 20, opacity: 0 }}
+            animate={inView ? { y: 0, opacity: 1 } : {}}
+            transition={{ delay: i * 0.08, duration: 0.6, ease: EASE }}
+          >
+            {word}
+            {isLast && showAsterisk && (
+              <span className="absolute top-[0.65em] -right-[0.3em] text-[0.31em]">*</span>
+            )}
+            {i < words.length - 1 && " "}
+          </motion.span>
+        );
+      })}
+    </span>
+  );
+}
+
+/* ---------- WordsPullUpMultiStyle ---------- */
+function WordsPullUpMultiStyle({ segments, className = "" }) {
+  const ref = useRef(null);
+  const inView = useInView(ref, { once: true });
+
+  const words = [];
+  segments.forEach((seg) => {
+    seg.text.split(" ").forEach((w) => words.push({ text: w, className: seg.className }));
+  });
+
+  return (
+    <span ref={ref} className={`inline-flex flex-wrap justify-center ${className}`}>
+      {words.map((w, i) => (
+        <motion.span
+          key={i}
+          className={`inline-block ${w.className}`}
+          initial={{ y: 20, opacity: 0 }}
+          animate={inView ? { y: 0, opacity: 1 } : {}}
+          transition={{ delay: i * 0.08, duration: 0.6, ease: EASE }}
+        >
+          {w.text}
+          {" "}
+        </motion.span>
+      ))}
+    </span>
+  );
+}
+
+/* ---------- AnimatedLetter (scroll-linked opacity) ---------- */
+function AnimatedLetter({ char, index, total, progress }) {
+  const cp = index / total;
+  const opacity = useTransform(progress, [cp - 0.1, cp + 0.05], [0.2, 1]);
+  return <motion.span style={{ opacity }}>{char}</motion.span>;
+}
+
+function ScrollRevealText({ text, className = "" }) {
+  const ref = useRef(null);
+  const { scrollYProgress } = useScroll({
+    target: ref,
+    offset: ["start 0.8", "end 0.2"],
+  });
+  const chars = text.split("");
+  return (
+    <p ref={ref} className={className}>
+      {chars.map((c, i) => (
+        <AnimatedLetter key={i} char={c} index={i} total={chars.length} progress={scrollYProgress} />
+      ))}
+    </p>
+  );
+}
+
+/* ---------- HERO ---------- */
+function Hero() {
+  return (
+    <section className="h-screen p-4 md:p-6">
+      <div className="relative w-full h-full rounded-2xl md:rounded-[2rem] overflow-hidden">
+        <video
+          className="absolute inset-0 w-full h-full object-cover"
+          src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260405_170732_8a9ccda6-5cff-4628-b164-059c500a2b41.mp4"
+          autoPlay
+          loop
+          muted
+          playsInline
+        />
+        <div className="absolute inset-0 noise-overlay opacity-[0.7] mix-blend-overlay pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/60" />
+
+        {/* Navbar */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 z-20">
+          <nav className="bg-black rounded-b-2xl md:rounded-b-3xl px-4 py-2 md:px-8 flex items-center gap-3 sm:gap-6 md:gap-12 lg:gap-14">
+            {["Our story", "Collective", "Workshops", "Programs", "Inquiries"].map((item) => (
+              <a
+                key={item}
+                href="#"
+                className="text-[10px] sm:text-xs md:text-sm transition-colors"
+                style={{ color: "rgba(225,224,204,0.8)" }}
+                onMouseEnter={(e) => (e.currentTarget.style.color = CREAM)}
+                onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(225,224,204,0.8)")}
+              >
+                {item}
+              </a>
+            ))}
+          </nav>
+        </div>
+
+        {/* Hero content */}
+        <div className="absolute bottom-0 left-0 right-0 px-4 md:px-8 pb-6 md:pb-10">
+          <div className="grid grid-cols-12 items-end gap-4">
+            <div className="col-span-12 md:col-span-8">
+              <h1
+                className="font-medium leading-[0.85] tracking-[-0.07em] text-[26vw] sm:text-[24vw] md:text-[22vw] lg:text-[20vw] xl:text-[19vw] 2xl:text-[20vw]"
+                style={{ color: CREAM }}
+              >
+                <WordsPullUp text="Prisma" showAsterisk />
+              </h1>
+            </div>
+            <div className="col-span-12 md:col-span-4 flex flex-col gap-4">
+              <motion.p
+                className="text-primary/70 text-xs sm:text-sm md:text-base"
+                style={{ lineHeight: 1.2 }}
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.5, duration: 0.8, ease: EASE }}
+              >
+                Prisma is a worldwide network of visual artists, filmmakers and storytellers bound not
+                by place, status or labels but by passion and hunger to unlock potential through our
+                unique perspectives.
+              </motion.p>
+
+              <motion.a
+                href="#"
+                className="group inline-flex items-center gap-2 hover:gap-3 bg-primary rounded-full pl-5 pr-1 py-1 w-fit text-black font-medium text-sm sm:text-base transition-all"
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.7, duration: 0.8, ease: EASE }}
+              >
+                Join the lab
+                <span className="bg-black rounded-full w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center transition-transform group-hover:scale-110">
+                  <ArrowRight size={18} color={CREAM} />
+                </span>
+              </motion.a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ---------- ABOUT ---------- */
+function About() {
+  return (
+    <section className="bg-black px-4 py-20 md:py-28">
+      <div className="bg-[#101010] rounded-2xl md:rounded-[2rem] max-w-6xl mx-auto text-center px-6 py-16 md:px-12 md:py-24">
+        <p className="text-primary text-[10px] sm:text-xs uppercase tracking-widest mb-6">Visual arts</p>
+
+        <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl max-w-3xl mx-auto leading-[0.95] sm:leading-[0.9] mb-10" style={{ color: CREAM }}>
+          <WordsPullUpMultiStyle
+            segments={[
+              { text: "I am Marcus Chen,", className: "font-normal" },
+              { text: "a self-taught director.", className: "italic font-serif" },
+              { text: "I have skills in color grading, visual effects, and narrative design.", className: "font-normal" },
+            ]}
+          />
+        </h2>
+
+        <ScrollRevealText
+          className="text-[#DEDBC8] text-xs sm:text-sm md:text-base max-w-2xl mx-auto"
+          text="Over the last seven years, I have worked with Parallax, a Berlin-based production house that crafts cinema, series, and Noir Studio in Paris. Together, we have created work that has earned international acclaim at several major festivals."
+        />
+      </div>
+    </section>
+  );
+}
+
+/* ---------- FEATURES ---------- */
+function ChecklistItem({ children }) {
+  return (
+    <li className="flex items-start gap-2 text-gray-400 text-xs sm:text-sm">
+      <Check size={16} className="text-primary shrink-0 mt-[2px]" />
+      <span>{children}</span>
+    </li>
+  );
+}
+
+function LearnMore() {
+  return (
+    <a href="#" className="inline-flex items-center gap-1 text-primary text-xs sm:text-sm mt-auto pt-4">
+      Learn more
+      <ArrowRight size={14} style={{ transform: "rotate(-45deg)" }} />
+    </a>
+  );
+}
+
+function FeatureCard({ index, children, video }) {
+  const ref = useRef(null);
+  const inView = useInView(ref, { once: true, margin: "-100px" });
+  return (
+    <motion.div
+      ref={ref}
+      className="h-full"
+      initial={{ scale: 0.95, opacity: 0 }}
+      animate={inView ? { scale: 1, opacity: 1 } : {}}
+      transition={{ delay: index * 0.15, duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
+const ICON_2 = "https://images.higgs.ai/?default=1&output=webp&url=https%3A%2F%2Fd8j0ntlcm91z4.cloudfront.net%2Fuser_38xzZboKViGWJOttwIXH07lWA1P%2Fhf_20260405_171918_4a5edc79-d78f-4637-ac8b-53c43c220606.png&w=1280&q=85";
+const ICON_3 = "https://images.higgs.ai/?default=1&output=webp&url=https%3A%2F%2Fd8j0ntlcm91z4.cloudfront.net%2Fuser_38xzZboKViGWJOttwIXH07lWA1P%2Fhf_20260405_171741_ed9845ab-f5b2-4018-8ce7-07cc01823522.png&w=1280&q=85";
+const ICON_4 = "https://images.higgs.ai/?default=1&output=webp&url=https%3A%2F%2Fd8j0ntlcm91z4.cloudfront.net%2Fuser_38xzZboKViGWJOttwIXH07lWA1P%2Fhf_20260405_171809_f56666dc-c099-4778-ad82-9ad4f209567b.png&w=1280&q=85";
+
+function InfoCard({ icon, number, title, items }) {
+  return (
+    <div className="bg-[#212121] rounded-2xl p-5 sm:p-6 flex flex-col h-full">
+      <img src={icon} alt="" className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg object-cover mb-6" />
+      <h3 className="text-lg sm:text-xl mb-4" style={{ color: CREAM }}>
+        <span className="text-gray-500 mr-2">{number}</span>
+        {title}
+      </h3>
+      <ul className="flex flex-col gap-3">
+        {items.map((it) => (
+          <ChecklistItem key={it}>{it}</ChecklistItem>
+        ))}
+      </ul>
+      <LearnMore />
+    </div>
+  );
+}
+
+function Features() {
+  return (
+    <section className="min-h-screen bg-black relative px-4 py-20 md:py-28">
+      <div className="absolute inset-0 bg-noise opacity-[0.15] pointer-events-none" />
+      <div className="relative max-w-7xl mx-auto">
+        <div className="text-center mb-12 md:mb-16">
+          <div className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-normal">
+            <WordsPullUpMultiStyle
+              segments={[
+                { text: "Studio-grade workflows for visionary creators.", className: "font-normal text-primary" },
+                { text: "Built for pure vision. Powered by art.", className: "font-normal text-gray-500" },
+              ]}
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-2 md:gap-1 lg:h-[480px]">
+          {/* Card 1 — video */}
+          <FeatureCard index={0}>
+            <div className="relative rounded-2xl overflow-hidden h-64 lg:h-full">
+              <video
+                className="absolute inset-0 w-full h-full object-cover"
+                src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260406_133058_0504132a-0cf3-4450-a370-8ea3b05c95d4.mp4"
+                autoPlay
+                loop
+                muted
+                playsInline
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
+              <p className="absolute bottom-5 left-5 text-lg sm:text-xl" style={{ color: CREAM }}>
+                Your creative canvas.
+              </p>
+            </div>
+          </FeatureCard>
+
+          <FeatureCard index={1}>
+            <InfoCard
+              icon={ICON_2}
+              number="01"
+              title="Project Storyboard."
+              items={[
+                "Drag-and-drop scene sequencing",
+                "Frame-accurate annotations",
+                "Shared team boards",
+                "Version history built in",
+              ]}
+            />
+          </FeatureCard>
+
+          <FeatureCard index={2}>
+            <InfoCard
+              icon={ICON_3}
+              number="02"
+              title="Smart Critiques."
+              items={[
+                "AI-driven shot analysis",
+                "Contextual creative notes",
+                "One-click tool integrations",
+              ]}
+            />
+          </FeatureCard>
+
+          <FeatureCard index={3}>
+            <InfoCard
+              icon={ICON_4}
+              number="03"
+              title="Immersion Capsule."
+              items={[
+                "Automatic notification silencing",
+                "Curated ambient soundscapes",
+                "Calendar & schedule syncing",
+              ]}
+            />
+          </FeatureCard>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function App() {
+  return (
+    <div className="bg-black">
+      <Hero />
+      <About />
+      <Features />
+    </div>
+  );
+}
+
+createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>
