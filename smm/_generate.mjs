@@ -10,6 +10,46 @@ const VIDEO = {
   wanderful: "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260510_060007_60275ce7-030c-4668-a160-8f364ec537d3.mp4",
 };
 
+/* ---- inline logo generation -------------------------------------------------
+   The base references external files (logos/<handle>.<ext>) that aren't shipped
+   with the HTML, so no logos show. We replace every logos/ reference with a
+   self-contained SVG monogram data-URI: a distinct colour per handle (hashed)
+   plus a two-letter mark, so a logo always renders in the portfolio wall, the
+   case-study .clogo, the editor .lg and the phone profile picture. ---------- */
+const MONOGRAM = {
+  opusreality: "OR", forthinkingminds: "FM", mindsetraptors: "MR",
+  thephilosophart: "PA", businessedgex: "BE", bymotivify: "MO",
+  hustlingmillionaires: "HM", causewerefemales: "CW", capitalfortunes: "CF",
+  inspi: "IN", adhdreacts: "AR", aroundvalue: "AV", execute: "EX",
+  moneyciety: "MC", multimillionaire_mind: "MM", wordsyoulovee: "WL",
+  createimprovement: "CI", victorianpoetry: "VP", vawtez: "VZ",
+};
+function hashInt(s){ let h=0; for(let i=0;i<s.length;i++){ h=(h*31+s.charCodeAt(i))>>>0; } return h; }
+function initials(name){
+  if(MONOGRAM[name]) return MONOGRAM[name];
+  const parts=name.split(/[_-]+/).filter(Boolean);
+  const s=(parts.length>1? parts[0][0]+parts[1][0] : name.slice(0,2));
+  return s.toUpperCase();
+}
+function logoDataUri(name){
+  const h=hashInt(name);
+  const hue=h%360, hue2=(hue+38)%360;
+  const svg=`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'>`+
+    `<defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'>`+
+    `<stop offset='0' stop-color='hsl(${hue},68%,54%)'/>`+
+    `<stop offset='1' stop-color='hsl(${hue2},66%,30%)'/>`+
+    `</linearGradient></defs>`+
+    `<rect width='100' height='100' fill='url(#g)'/>`+
+    `<circle cx='30' cy='26' r='34' fill='rgba(255,255,255,.14)'/>`+
+    `<text x='50' y='54' text-anchor='middle' dominant-baseline='central' `+
+    `font-family='Georgia,"Times New Roman",serif' font-weight='700' font-size='40' `+
+    `letter-spacing='1' fill='rgba(255,255,255,.96)'>${initials(name)}</text></svg>`;
+  return "data:image/svg+xml,"+encodeURIComponent(svg);
+}
+function inlineLogos(html){
+  return html.replace(/logos\/([a-zA-Z0-9_-]+)\.[a-z0-9]+/g, (_,name)=>logoDataUri(name));
+}
+
 const NOISE_URI =
   "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")";
 
@@ -102,8 +142,10 @@ const variants = {
   },
 };
 
+const based = inlineLogos(base);
+
 for (const [key, v] of Object.entries(variants)) {
-  let html = base;
+  let html = based;
 
   // 1) make the page background transparent so the video shows through
   html = html.replace(
